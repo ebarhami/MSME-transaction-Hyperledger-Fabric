@@ -11,69 +11,73 @@ const { Contract } = require('fabric-contract-api');
 class AssetTransfer extends Contract {
 
     async InitLedger(ctx) {
-        const assets = [
+        const asset = [
             {
-                ID: 'asset1',
-                Color: 'blue',
-                Size: 5,
-                Owner: 'Tomoko',
-                AppraisedValue: 300,
-            },
-            {
-                ID: 'asset2',
-                Color: 'red',
-                Size: 5,
-                Owner: 'Brad',
-                AppraisedValue: 400,
-            },
-            {
-                ID: 'asset3',
-                Color: 'green',
-                Size: 10,
-                Owner: 'Jin Soo',
-                AppraisedValue: 500,
-            },
-            {
-                ID: 'asset4',
-                Color: 'yellow',
-                Size: 10,
-                Owner: 'Max',
-                AppraisedValue: 600,
-            },
-            {
-                ID: 'asset5',
-                Color: 'black',
-                Size: 15,
-                Owner: 'Adriana',
-                AppraisedValue: 700,
-            },
-            {
-                ID: 'asset6',
-                Color: 'white',
-                Size: 15,
-                Owner: 'Michel',
-                AppraisedValue: 800,
+                ID: 'asset-master',
+                Type: 'asset',
+                Owner: 'admin',
+                Status: 'init',
             },
         ];
 
-        for (const asset of assets) {
-            asset.docType = 'asset';
-            await ctx.stub.putState(asset.ID, Buffer.from(JSON.stringify(asset)));
-            console.info(`Asset ${asset.ID} initialized`);
-        }
+        asset.docType = 'asset';
+        await ctx.stub.putState(asset.ID, Buffer.from(JSON.stringify(asset)));
+        console.info(`Asset ${asset.ID} initialized`);
     }
 
     // CreateAsset issues a new asset to the world state with given details.
-    async CreateAsset(ctx, id, color, size, owner, appraisedValue) {
+    async CreateAsset(ctx, id, category, name, owner, price) {
         const asset = {
             ID: id,
-            Color: color,
-            Size: size,
+            Type: 'asset',
+            Category: category,
+            Name: name,
             Owner: owner,
-            AppraisedValue: appraisedValue,
+            Price: price,
+            Status: 'issued',
+            LastUpdated: new Date(),
         };
         return ctx.stub.putState(id, Buffer.from(JSON.stringify(asset)));
     }
+
+
+    async BuyAsset(ctx, id, newOwner) {
+        const assetString = await this.ReadAsset(ctx, id);
+        const asset = JSON.parse(assetString);
+
+        if (!asset || asset.length === 0) {
+            throw new Error(`The asset ${id} does not exist`);
+        }
+
+        if (asset.Owner === newOwner) {
+            throw new Error('Asset ' + asset.ID + ' can not be bought by the owner');
+        }
+
+        if (asset.Status !== 'issued') {
+            throw new Error('Asset ' + asset.ID + ' can not be bought. Status=' + asset.Status);
+        }
+
+        // create SAK ETAP
+        const purchasedAsset = {
+            ID: 'purchased_' + asset.ID,
+            Type: 'sak-etap',
+            Category: asset.Category,
+            Name: asset.name,
+            Owner: asset.Owner,
+            Price: asset.Price,
+            Status: 'purchased',
+            LastUpdated: new Date(),
+        }
+        ctx.stub.putState(purchasedAsset.ID, Buffer.from(JSON.stringify(purchasedAsset)));
+
+        // change owner and status asset
+        asset.Owner = newOwner;
+        asset.Status = 'purchased';
+        asset.LastUpdated = new Date();
+
+        return ctx.stub.putState(id, Buffer.from(JSON.stringify(asset)));
+    }
+
 
     // ReadAsset returns the asset stored in the world state with given id.
     async ReadAsset(ctx, id) {
@@ -84,23 +88,6 @@ class AssetTransfer extends Contract {
         return assetJSON.toString();
     }
 
-    // UpdateAsset updates an existing asset in the world state with provided parameters.
-    async UpdateAsset(ctx, id, color, size, owner, appraisedValue) {
-        const exists = await this.AssetExists(ctx, id);
-        if (!exists) {
-            throw new Error(`The asset ${id} does not exist`);
-        }
-
-        // overwriting original asset with new asset
-        const updatedAsset = {
-            ID: id,
-            Color: color,
-            Size: size,
-            Owner: owner,
-            AppraisedValue: appraisedValue,
-        };
-        return ctx.stub.putState(id, Buffer.from(JSON.stringify(updatedAsset)));
-    }
 
     // DeleteAsset deletes an given asset from the world state.
     async DeleteAsset(ctx, id) {
@@ -117,16 +104,9 @@ class AssetTransfer extends Contract {
         return assetJSON && assetJSON.length > 0;
     }
 
-    // TransferAsset updates the owner field of asset with given id in the world state.
-    async TransferAsset(ctx, id, newOwner) {
-        const assetString = await this.ReadAsset(ctx, id);
-        const asset = JSON.parse(assetString);
-        asset.Owner = newOwner;
-        return ctx.stub.putState(id, Buffer.from(JSON.stringify(asset)));
-    }
 
     // GetAllAssets returns all assets found in the world state.
-    async GetAllAssets(ctx) {
+    async GetMyAssets(ctx, owner) {
         const allResults = [];
         // range query with empty string for startKey and endKey does an open-ended query of all assets in the chaincode namespace.
         const iterator = await ctx.stub.getStateByRange('', '');
@@ -140,12 +120,63 @@ class AssetTransfer extends Contract {
                 console.log(err);
                 record = strValue;
             }
+            if (record.Type !== 'asset' || record.Owner !== owner) {
+                result = await iterator.next();
+                continue;
+            }
             allResults.push({ Key: result.value.key, Record: record });
             result = await iterator.next();
         }
         return JSON.stringify(allResults);
     }
 
+    async GetIssuedAssets(ctx) {
+        const allResults = [];
+        // range query with empty string for startKey and endKey does an open-ended query of all assets in the chaincode namespace.
+        const iterator = await ctx.stub.getStateByRange('', '');
+        let result = await iterator.next();
+        while (!result.done) {
+            const strValue = Buffer.from(result.value.value.toString()).toString('utf8');
+            let record;
+            try {
+                record = JSON.parse(strValue);
+            } catch (err) {
+                console.log(err);
+                record = strValue;
+            }
+            if (record.Status !== 'issued') {
+                result = await iterator.next();
+                continue;
+            }
+            allResults.push({ Key: result.value.key, Record: record });
+            result = await iterator.next();
+        }
+        return JSON.stringify(allResults);
+    }
+
+    async GetMyReport(ctx, owner) {
+        const allResults = [];
+        // range query with empty string for startKey and endKey does an open-ended query of all assets in the chaincode namespace.
+        const iterator = await ctx.stub.getStateByRange('', '');
+        let result = await iterator.next();
+        while (!result.done) {
+            const strValue = Buffer.from(result.value.value.toString()).toString('utf8');
+            let record;
+            try {
+                record = JSON.parse(strValue);
+            } catch (err) {
+                console.log(err);
+                record = strValue;
+            }
+            if (record.Type !== 'sak-etap' || record.Owner !== owner) {
+                result = await iterator.next();
+                continue;
+            }
+            allResults.push({ Key: result.value.key, Record: record });
+            result = await iterator.next();
+        }
+        return JSON.stringify(allResults);
+    }
 
 }
 
