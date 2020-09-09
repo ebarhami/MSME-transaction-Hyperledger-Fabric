@@ -6,7 +6,8 @@
 
 'use strict';
 
-const { Gateway, Wallets } = require('fabric-network');
+const { v4: uuidv4 } = require('uuid');
+const { Gateway, Wallets, Wallet } = require('fabric-network');
 const FabricCAServices = require('fabric-ca-client');
 const path = require('path');
 const { buildCAClient, registerAndEnrollUser, enrollAdmin } = require('../../test-application/javascript/CAUtil.js');
@@ -75,7 +76,7 @@ const caClient = buildCAClient(FabricCAServices, ccp, 'ca.org1.example.com');
 
 (async function () {
 	global.walletAdmin = await buildWallet(Wallets, walletPath);
-
+	global.wallet = await buildWallet(Wallets, null);
 	// in a real application this would be done on an administrative flow, and only once
 	await enrollAdmin(caClient, walletAdmin, mspOrg1);
 })()
@@ -118,7 +119,7 @@ app.post('/register', async (req, res) => {
 		var first_name = req.body.first_name
 		var last_name = req.body.last_name
 
-		var wallet = await buildWallet(Wallets, null);
+		
 
 		// in a real application this would be done on an administrative flow, and only once
 
@@ -141,6 +142,7 @@ app.post('/register', async (req, res) => {
 		// console.log(`*** Result: committed ${result}`);
 
 		gateway.disconnect();
+		res.setHeader('Content-Type', 'application/json');
 		res.send(identity);		
 	
 	} catch (e) {
@@ -156,6 +158,64 @@ app.post('/login', async (req, res) => {
 		var username = req.body.username
 		var identity = req.body.identity
 
+		
+		var tes = await wallet.get(username)
+		console.log("TESTSTS");
+		console.log(tes);
+
+		for (var key in wallet) {
+			if (wallet.hasOwnProperty(key)) {
+				console.log(key + " -> " + wallet[key]);
+			}
+		}
+
+
+		console.log(walletAdmin);
+		console.log('ENSOF BARHAMIIIIIIIII');
+		if (wallet.get(username) == walletAdmin.get(username)) {
+			console.log('admin login');
+			
+			wallet = walletAdmin;
+		}
+
+		await gateway.connect(ccp, {
+			wallet,
+			identity: username,
+			discovery: { enabled: true, asLocalhost: true } // using asLocalhost as this gateway is using a fabric network deployed locally
+		});
+
+		// // Build a network instance based on the channel where the smart contract is deployed
+		// const network = await gateway.getNetwork(channelName);
+
+		// // Get the contract from the network.
+		// const contract = network.getContract(chaincodeName);
+
+		// console.log('\n--> Submit Transaction: Register');
+		// let result = await contract.submitTransaction('GetMyAssets', username);
+		// console.log(`*** Result: committed ${result}`);
+
+		gateway.disconnect();
+		console.log('login success');
+		res.setHeader('Content-Type', 'application/json');
+		res.status(200).send(identity);
+
+	} catch (e) {
+		console.log('error' + e);
+		//this will eventually be handled by your error handling middleware
+		res.status(500).send(e);
+	}
+})
+
+app.post('/create-asset', async (req, res) => {
+	try {
+		var username = req.body.username
+		var identity = req.body.identity
+
+		var id = uuidv4();
+		var category = req.body.category
+		var name = req.body.name
+		var price = req.body.price
+
 		var wallet = await buildWallet(Wallets, null);
 		wallet.put(username, identity);
 
@@ -165,9 +225,236 @@ app.post('/login', async (req, res) => {
 			discovery: { enabled: true, asLocalhost: true } // using asLocalhost as this gateway is using a fabric network deployed locally
 		});
 
+		// Build a network instance based on the channel where the smart contract is deployed
+		const network = await gateway.getNetwork(channelName);
+
+		// Get the contract from the network.
+		const contract = network.getContract(chaincodeName);
+
+		console.log('\n--> Submit Transaction: Register');
+		let result = await contract.submitTransaction('CreateAsset', id, category, name, username, price);
+		console.log(`*** Result: committed ${result}`);
+
 		gateway.disconnect();
-		console.log('login success');
-		res.status(200).send(identity);
+		res.setHeader('Content-Type', 'application/json');
+		res.status(200).send(result);
+
+	} catch (e) {
+		console.log('error' + e);
+		//this will eventually be handled by your error handling middleware
+		res.status(500).send(e);
+	}
+})
+
+app.post('/my-asset', async (req, res) => {
+	try {
+		var username = req.body.username
+		var identity = req.body.identity
+
+		var wallet = await buildWallet(Wallets, null);
+		wallet.put(username, identity);
+
+		await gateway.connect(ccp, {
+			wallet,
+			identity: username,
+			discovery: { enabled: true, asLocalhost: true } // using asLocalhost as this gateway is using a fabric network deployed locally
+		});
+
+		// Build a network instance based on the channel where the smart contract is deployed
+		const network = await gateway.getNetwork(channelName);
+
+		// Get the contract from the network.
+		const contract = network.getContract(chaincodeName);
+
+		console.log('\n--> Submit Transaction: Register');
+		let result = await contract.submitTransaction('GetMyAssets', username);
+		console.log(`*** Result: committed ${result}`);
+
+		gateway.disconnect();
+		res.setHeader('Content-Type', 'application/json');
+		res.status(200).send(result);
+
+	} catch (e) {
+		console.log('error' + e);
+		//this will eventually be handled by your error handling middleware
+		res.status(500).send(e);
+	}
+})
+
+app.post('/issued-asset', async (req, res) => {
+	try {
+		var username = req.body.username
+		var identity = req.body.identity
+
+		var wallet = await buildWallet(Wallets, null);
+		wallet.put(username, identity);
+
+		await gateway.connect(ccp, {
+			wallet,
+			identity: username,
+			discovery: { enabled: true, asLocalhost: true } // using asLocalhost as this gateway is using a fabric network deployed locally
+		});
+
+		// Build a network instance based on the channel where the smart contract is deployed
+		const network = await gateway.getNetwork(channelName);
+
+		// Get the contract from the network.
+		const contract = network.getContract(chaincodeName);
+
+		console.log('\n--> Submit Transaction: issued asset');
+		let result = await contract.submitTransaction('GetIssuedAssets');
+		console.log(`*** Result: committed ${result}`);
+
+		gateway.disconnect();
+		res.setHeader('Content-Type', 'application/json');
+		res.status(200).send(result);
+
+	} catch (e) {
+		console.log('error' + e);
+		//this will eventually be handled by your error handling middleware
+		res.status(500).send(e);
+	}
+})
+
+app.post('/my-report', async (req, res) => {
+	try {
+		var username = req.body.username
+		var identity = req.body.identity
+
+		var wallet = await buildWallet(Wallets, null);
+		wallet.put(username, identity);
+
+		await gateway.connect(ccp, {
+			wallet,
+			identity: username,
+			discovery: { enabled: true, asLocalhost: true } // using asLocalhost as this gateway is using a fabric network deployed locally
+		});
+
+		// Build a network instance based on the channel where the smart contract is deployed
+		const network = await gateway.getNetwork(channelName);
+
+		// Get the contract from the network.
+		const contract = network.getContract(chaincodeName);
+
+		console.log('\n--> Submit Transaction: issued asset');
+		let result = await contract.submitTransaction('GetMyReport', username);
+		console.log(`*** Result: committed ${result}`);
+
+		gateway.disconnect();
+		res.setHeader('Content-Type', 'application/json');
+		res.status(200).send(result);
+
+	} catch (e) {
+		console.log('error' + e);
+		//this will eventually be handled by your error handling middleware
+		res.status(500).send(e);
+	}
+})
+
+app.post('/buy', async (req, res) => {
+	try {
+		var username = req.body.username;
+		var identity = req.body.identity;
+
+		var id = req.body.id;
+
+		var wallet = await buildWallet(Wallets, null);
+		wallet.put(username, identity);
+
+		await gateway.connect(ccp, {
+			wallet,
+			identity: username,
+			discovery: { enabled: true, asLocalhost: true } // using asLocalhost as this gateway is using a fabric network deployed locally
+		});
+
+		// Build a network instance based on the channel where the smart contract is deployed
+		const network = await gateway.getNetwork(channelName);
+
+		// Get the contract from the network.
+		const contract = network.getContract(chaincodeName);
+
+		console.log('\n--> Submit Transaction: issued asset');
+		let result = await contract.submitTransaction('BuyAsset', id, username);
+		console.log(`*** Result: committed ${result}`);
+
+		gateway.disconnect();
+		res.setHeader('Content-Type', 'application/json');
+		res.status(200).send(result);
+
+	} catch (e) {
+		console.log('error' + e);
+		//this will eventually be handled by your error handling middleware
+		res.status(500).send(e);
+	}
+})
+
+app.post('/issue-token', async (req, res) => {
+	try {
+		var username = req.body.username;
+		var identity = req.body.identity;
+
+		var amount = req.body.amount;
+
+		var wallet = await buildWallet(Wallets, null);
+		wallet.put(username, identity);
+
+		await gateway.connect(ccp, {
+			wallet,
+			identity: username,
+			discovery: { enabled: true, asLocalhost: true } // using asLocalhost as this gateway is using a fabric network deployed locally
+		});
+
+		// Build a network instance based on the channel where the smart contract is deployed
+		const network = await gateway.getNetwork(channelName);
+
+		// Get the contract from the network.
+		const contract = network.getContract(chaincodeName);
+
+		// console.log('\n--> Submit Transaction: issued asset');
+		// let result = await contract.submitTransaction('IssueToken', amount);
+		// console.log(`*** Result: committed ${result}`);
+
+		gateway.disconnect();
+		res.setHeader('Content-Type', 'application/json');
+		res.status(200).send(result);
+
+	} catch (e) {
+		console.log('error' + e);
+		//this will eventually be handled by your error handling middleware
+		res.status(500).send(e);
+	}
+})
+
+app.post('/send-token', async (req, res) => {
+	try {
+		var username = req.body.username;
+		var identity = req.body.identity;
+
+		var amount = req.body.amount;
+		var recipient = req.body.recipient;
+
+		var wallet = await buildWallet(Wallets, null);
+		wallet.put(username, identity);
+
+		await gateway.connect(ccp, {
+			wallet,
+			identity: username,
+			discovery: { enabled: true, asLocalhost: true } // using asLocalhost as this gateway is using a fabric network deployed locally
+		});
+
+		// Build a network instance based on the channel where the smart contract is deployed
+		const network = await gateway.getNetwork(channelName);
+
+		// Get the contract from the network.
+		const contract = network.getContract(chaincodeName);
+
+		console.log('\n--> Submit Transaction: issued asset');
+		let result = await contract.submitTransaction('BuyAsset', id, username);
+		console.log(`*** Result: committed ${result}`);
+
+		gateway.disconnect();
+		res.setHeader('Content-Type', 'application/json');
+		res.status(200).send(result);
 
 	} catch (e) {
 		console.log('error' + e);
