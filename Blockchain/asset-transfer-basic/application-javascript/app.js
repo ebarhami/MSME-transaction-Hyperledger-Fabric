@@ -16,7 +16,10 @@ const channelName = 'mychannel';
 const chaincodeName = 'basic';
 const mspOrg1 = 'Org1MSP';
 const walletPath = path.join(__dirname, 'wallet');
-const org1UserId = 'appUser';
+const org1UserId = 'rudiiiii';
+
+const privateKey = '-----BEGIN PRIVATE KEY-----\r\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgAkdi85wZmiU6UEJV\r\nzFeQjqmkydtI9BzHq9L819br/OChRANCAAQxpMjONT++8vKezUZwmU+bnn6uAB+W\r\nC4DID28CWVe2jsSShpNjPRT8WinjMYtX6wxQW9fI1spyI8cbrmb6TB4B\r\n-----END PRIVATE KEY-----\r\n';
+const certs = '-----BEGIN CERTIFICATE-----\nMIICfjCCAiSgAwIBAgIUMKus2/8D3/Q2lni1yEwV6oMENNowCgYIKoZIzj0EAwIw\ncDELMAkGA1UEBhMCVVMxFzAVBgNVBAgTDk5vcnRoIENhcm9saW5hMQ8wDQYDVQQH\nEwZEdXJoYW0xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh\nLm9yZzEuZXhhbXBsZS5jb20wHhcNMjAwOTA3MTA1NDAwWhcNMjEwOTA3MTA1OTAw\nWjBBMTAwDQYDVQQLEwZjbGllbnQwCwYDVQQLEwRvcmcxMBIGA1UECxMLZGVwYXJ0\nbWVudDExDTALBgNVBAMTBHJ1ZGkwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQx\npMjONT++8vKezUZwmU+bnn6uAB+WC4DID28CWVe2jsSShpNjPRT8WinjMYtX6wxQ\nW9fI1spyI8cbrmb6TB4Bo4HKMIHHMA4GA1UdDwEB/wQEAwIHgDAMBgNVHRMBAf8E\nAjAAMB0GA1UdDgQWBBTzjJYfsDlaWt96EUTQo0ujYOt7/TAfBgNVHSMEGDAWgBSF\nnCvf0OImmiiY18N60Et196iMmzBnBggqAwQFBgcIAQRbeyJhdHRycyI6eyJoZi5B\nZmZpbGlhdGlvbiI6Im9yZzEuZGVwYXJ0bWVudDEiLCJoZi5FbnJvbGxtZW50SUQi\nOiJydWRpIiwiaGYuVHlwZSI6ImNsaWVudCJ9fTAKBggqhkjOPQQDAgNIADBFAiEA\n3SdoVSiHwesxWJih3h/1NX89/z9BFi8b/eoDY0Y1KyQCIAS92xvPrUsqA8Pqci2S\n//UTt1cPRIZAtCEyob89ZytL\n-----END CERTIFICATE-----\n';
 
 function prettyJSONString(inputString) {
 	return JSON.stringify(JSON.parse(inputString), null, 2);
@@ -61,117 +64,116 @@ function prettyJSONString(inputString) {
 // with the new certificate authority.
 //
 
-/**
- *  A test application to show basic queries operations with any of the asset-transfer-basic chaincodes
- *   -- How to submit a transaction
- *   -- How to query and check the results
- *
- * To see the SDK workings, try setting the logging to show on the console before running
- *        export HFC_LOGGING='{"debug":"console"}'
- */
-async function main() {
+// build an in memory object with the network configuration (also known as a connection profile)
+const ccp = buildCCPOrg1();
+
+// build an instance of the fabric ca services client based on
+// the information in the network configuration
+const caClient = buildCAClient(FabricCAServices, ccp, 'ca.org1.example.com');
+
+// await wallet.put(org1UserId, x509Identity);
+
+(async function () {
+	global.walletAdmin = await buildWallet(Wallets, walletPath);
+
+	// in a real application this would be done on an administrative flow, and only once
+	await enrollAdmin(caClient, walletAdmin, mspOrg1);
+})()
+
+const gateway = new Gateway();
+
+var express = require('express');
+const bodyParser = require("body-parser");
+var jsonParser = bodyParser.json();
+var app = express();
+
+// parse application/x-www-form-urlencoded
+app.use(bodyParser.urlencoded({ extended: false }))
+
+// parse application/json
+app.use(bodyParser.json())
+
+const port = 3000
+
+// const x509Identity = {
+// 	credentials: {
+// 		certificate: 'tes',
+// 		privateKey: 'tes',
+// 	},
+// 	mspId: 'orgMspId',
+// 	type: 'X.509',
+// };
+
+app.get('/tes', async (req, res) => {
 	try {
-		// build an in memory object with the network configuration (also known as a connection profile)
-		const ccp = buildCCPOrg1();
+		res.send('ENSOF');
+	} catch (error) {
+		res.end();
+	}
+})
 
-		// build an instance of the fabric ca services client based on
-		// the information in the network configuration
-		const caClient = buildCAClient(FabricCAServices, ccp, 'ca.org1.example.com');
+app.post('/register', async (req, res) => {
+	try {
+		var username = req.body.username
+		var first_name = req.body.first_name
+		var last_name = req.body.last_name
 
-		// setup the wallet to hold the credentials of the application user
-		const wallet = await buildWallet(Wallets, walletPath);
+		var wallet = await buildWallet(Wallets, null);
 
 		// in a real application this would be done on an administrative flow, and only once
-		await enrollAdmin(caClient, wallet, mspOrg1);
 
-		// in a real application this would be done only when a new user was required to be added
-		// and would be part of an administrative flow
-		await registerAndEnrollUser(caClient, wallet, mspOrg1, org1UserId, 'org1.department1');
+		var identity = await registerAndEnrollUser(caClient, wallet, walletAdmin, mspOrg1, username, 'org1.department1');
 
-		// Create a new gateway instance for interacting with the fabric network.
-		// In a real application this would be done as the backend server session is setup for
-		// a user that has been verified.
-		const gateway = new Gateway();
+		await gateway.connect(ccp, {
+			wallet,
+			identity: username,
+			discovery: { enabled: true, asLocalhost: true } // using asLocalhost as this gateway is using a fabric network deployed locally
+		});
 
-		try {
-			// setup the gateway instance
-			// The user will now be able to create connections to the fabric network and be able to
-			// submit transactions and query. All transactions submitted by this gateway will be
-			// signed by this user using the credentials stored in the wallet.
-			await gateway.connect(ccp, {
-				wallet,
-				identity: org1UserId,
-				discovery: { enabled: true, asLocalhost: true } // using asLocalhost as this gateway is using a fabric network deployed locally
-			});
+		// Build a network instance based on the channel where the smart contract is deployed
+		const network = await gateway.getNetwork(channelName);
 
-			// Build a network instance based on the channel where the smart contract is deployed
-			const network = await gateway.getNetwork(channelName);
+		// Get the contract from the network.
+		const contract = network.getContract(chaincodeName);
 
-			// Get the contract from the network.
-			const contract = network.getContract(chaincodeName);
+		// console.log('\n--> Submit Transaction: Register');
+		// let result = await contract.submitTransaction("Register", username, first_name, last_name);
+		// console.log(`*** Result: committed ${result}`);
 
-			// Initialize a set of asset data on the channel using the chaincode 'InitLedger' function.
-			// This type of transaction would only be run once by an application the first time it was started after it
-			// deployed the first time. Any updates to the chaincode deployed later would likely not need to run
-			// an "init" type function.
-			console.log('\n--> Submit Transaction: InitLedger, function creates the initial set of assets on the ledger');
-			await contract.submitTransaction('InitLedger');
-			console.log('*** Result: committed');
-
-			// Let's try a query type operation (function).
-			// This will be sent to just one peer and the results will be shown.
-			console.log('\n--> Evaluate Transaction: GetAllAssets, function returns all the current assets on the ledger');
-			let result = await contract.evaluateTransaction('GetAllAssets');
-			console.log(`*** Result: ${prettyJSONString(result.toString())}`);
-
-			// Now let's try to submit a transaction.
-			// This will be sent to both peers and if both peers endorse the transaction, the endorsed proposal will be sent
-			// to the orderer to be committed by each of the peer's to the channel ledger.
-			console.log('\n--> Submit Transaction: CreateAsset, creates new asset with ID, color, owner, size, and appraisedValue arguments');
-			await contract.submitTransaction('CreateAsset', 'asset13', 'yellow', '5', 'Tom', '1300');
-			console.log('*** Result: committed');
-
-			console.log('\n--> Evaluate Transaction: ReadAsset, function returns an asset with a given assetID');
-			result = await contract.evaluateTransaction('ReadAsset', 'asset13');
-			console.log(`*** Result: ${prettyJSONString(result.toString())}`);
-
-			console.log('\n--> Evaluate Transaction: AssetExists, function returns "true" if an asset with given assetID exist');
-			result = await contract.evaluateTransaction('AssetExists', 'asset1');
-			console.log(`*** Result: ${prettyJSONString(result.toString())}`);
-
-			console.log('\n--> Submit Transaction: UpdateAsset asset1, change the appraisedValue to 350');
-			await contract.submitTransaction('UpdateAsset', 'asset1', 'blue', '5', 'Tomoko', '350');
-			console.log('*** Result: committed');
-
-			console.log('\n--> Evaluate Transaction: ReadAsset, function returns "asset1" attributes');
-			result = await contract.evaluateTransaction('ReadAsset', 'asset1');
-			console.log(`*** Result: ${prettyJSONString(result.toString())}`);
-
-			try {
-				// How about we try a transactions where the executing chaincode throws an error
-				// Notice how the submitTransaction will throw an error containing the error thrown by the chaincode
-				console.log('\n--> Submit Transaction: UpdateAsset asset70, asset70 does not exist and should return an error');
-				await contract.submitTransaction('UpdateAsset', 'asset70', 'blue', '5', 'Tomoko', '300');
-				console.log('******** FAILED to return an error');
-			} catch (error) {
-				console.log(`*** Successfully caught the error: \n    ${error}`);
-			}
-
-			console.log('\n--> Submit Transaction: TransferAsset asset1, transfer to new owner of Tom');
-			await contract.submitTransaction('TransferAsset', 'asset1', 'Tom');
-			console.log('*** Result: committed');
-
-			console.log('\n--> Evaluate Transaction: ReadAsset, function returns "asset1" attributes');
-			result = await contract.evaluateTransaction('ReadAsset', 'asset1');
-			console.log(`*** Result: ${prettyJSONString(result.toString())}`);
-		} finally {
-			// Disconnect from the gateway when the application is closing
-			// This will close all connections to the network
-			gateway.disconnect();
-		}
-	} catch (error) {
-		console.error(`******** FAILED to run the application: ${error}`);
+		gateway.disconnect();
+		res.send(identity);		
+	
+	} catch (e) {
+		console.log('error')
+		//this will eventually be handled by your error handling middleware
+		res.status(500).send(e);
 	}
-}
+})
 
-main();
+
+app.post('/login', async (req, res) => {
+	try {
+		var username = req.body.username
+		var identity = req.body.identity
+
+		var wallet = await buildWallet(Wallets, null);
+		wallet.put(username, identity);
+
+		await gateway.connect(ccp, {
+			wallet,
+			identity: username,
+			discovery: { enabled: true, asLocalhost: true } // using asLocalhost as this gateway is using a fabric network deployed locally
+		});
+
+		gateway.disconnect();
+		console.log('login success');
+		res.status(200).send(identity);
+
+	} catch (e) {
+		console.log('error' + e);
+		//this will eventually be handled by your error handling middleware
+		res.status(500).send(e);
+	}
+})
+
+app.listen(port, () => console.log('listening to port ' + port))
