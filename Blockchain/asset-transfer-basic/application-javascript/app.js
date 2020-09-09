@@ -75,10 +75,9 @@ const caClient = buildCAClient(FabricCAServices, ccp, 'ca.org1.example.com');
 // await wallet.put(org1UserId, x509Identity);
 
 (async function () {
-	global.walletAdmin = await buildWallet(Wallets, walletPath);
-	global.wallet = await buildWallet(Wallets, null);
+	global.wallet = await buildWallet(Wallets, walletPath);
 	// in a real application this would be done on an administrative flow, and only once
-	await enrollAdmin(caClient, walletAdmin, mspOrg1);
+	await enrollAdmin(caClient, wallet, mspOrg1);
 })()
 
 const gateway = new Gateway();
@@ -119,11 +118,9 @@ app.post('/register', async (req, res) => {
 		var first_name = req.body.first_name
 		var last_name = req.body.last_name
 
-		
-
 		// in a real application this would be done on an administrative flow, and only once
 
-		var identity = await registerAndEnrollUser(caClient, wallet, walletAdmin, mspOrg1, username, 'org1.department1');
+		var identity = await registerAndEnrollUser(caClient, wallet, mspOrg1, username, 'org1.department1');
 
 		await gateway.connect(ccp, {
 			wallet,
@@ -154,28 +151,15 @@ app.post('/register', async (req, res) => {
 
 
 app.post('/login', async (req, res) => {
+	res.setHeader('Content-Type', 'application/json');
 	try {
 		var username = req.body.username
 		var identity = req.body.identity
 
 		
-		var tes = await wallet.get(username)
-		console.log("TESTSTS");
-		console.log(tes);
-
-		for (var key in wallet) {
-			if (wallet.hasOwnProperty(key)) {
-				console.log(key + " -> " + wallet[key]);
-			}
-		}
-
-
-		console.log(walletAdmin);
-		console.log('ENSOF BARHAMIIIIIIIII');
-		if (wallet.get(username) == walletAdmin.get(username)) {
-			console.log('admin login');
-			
-			wallet = walletAdmin;
+		var validate = await wallet.get(username)
+		if (JSON.stringify(validate) != JSON.stringify(identity)) {
+			return res.status(500).end("incorrect username/identity");
 		}
 
 		await gateway.connect(ccp, {
@@ -196,7 +180,6 @@ app.post('/login', async (req, res) => {
 
 		gateway.disconnect();
 		console.log('login success');
-		res.setHeader('Content-Type', 'application/json');
 		res.status(200).send(identity);
 
 	} catch (e) {
@@ -207,6 +190,7 @@ app.post('/login', async (req, res) => {
 })
 
 app.post('/create-asset', async (req, res) => {
+	res.setHeader('Content-Type', 'application/json');
 	try {
 		var username = req.body.username
 		var identity = req.body.identity
@@ -216,8 +200,10 @@ app.post('/create-asset', async (req, res) => {
 		var name = req.body.name
 		var price = req.body.price
 
-		var wallet = await buildWallet(Wallets, null);
-		wallet.put(username, identity);
+		var validate = await wallet.get(username)
+		if (JSON.stringify(validate) != JSON.stringify(identity)) {
+			return res.status(500).end("incorrect username/identity");
+		}
 
 		await gateway.connect(ccp, {
 			wallet,
@@ -236,7 +222,7 @@ app.post('/create-asset', async (req, res) => {
 		console.log(`*** Result: committed ${result}`);
 
 		gateway.disconnect();
-		res.setHeader('Content-Type', 'application/json');
+		
 		res.status(200).send(result);
 
 	} catch (e) {
@@ -247,12 +233,15 @@ app.post('/create-asset', async (req, res) => {
 })
 
 app.post('/my-asset', async (req, res) => {
+	res.setHeader('Content-Type', 'application/json');
 	try {
 		var username = req.body.username
 		var identity = req.body.identity
 
-		var wallet = await buildWallet(Wallets, null);
-		wallet.put(username, identity);
+		var validate = await wallet.get(username)
+		if (JSON.stringify(validate) != JSON.stringify(identity)) {
+			return res.status(500).end("incorrect username/identity");
+		}
 
 		await gateway.connect(ccp, {
 			wallet,
@@ -271,7 +260,7 @@ app.post('/my-asset', async (req, res) => {
 		console.log(`*** Result: committed ${result}`);
 
 		gateway.disconnect();
-		res.setHeader('Content-Type', 'application/json');
+		
 		res.status(200).send(result);
 
 	} catch (e) {
@@ -282,12 +271,15 @@ app.post('/my-asset', async (req, res) => {
 })
 
 app.post('/issued-asset', async (req, res) => {
+	res.setHeader('Content-Type', 'application/json');
 	try {
 		var username = req.body.username
 		var identity = req.body.identity
 
-		var wallet = await buildWallet(Wallets, null);
-		wallet.put(username, identity);
+		var validate = await wallet.get(username)
+		if (JSON.stringify(validate) != JSON.stringify(identity)) {
+			return res.status(500).end("incorrect username/identity");
+		}
 
 		await gateway.connect(ccp, {
 			wallet,
@@ -306,7 +298,7 @@ app.post('/issued-asset', async (req, res) => {
 		console.log(`*** Result: committed ${result}`);
 
 		gateway.disconnect();
-		res.setHeader('Content-Type', 'application/json');
+		
 		res.status(200).send(result);
 
 	} catch (e) {
@@ -317,12 +309,15 @@ app.post('/issued-asset', async (req, res) => {
 })
 
 app.post('/my-report', async (req, res) => {
+	res.setHeader('Content-Type', 'application/json');
 	try {
 		var username = req.body.username
 		var identity = req.body.identity
 
-		var wallet = await buildWallet(Wallets, null);
-		wallet.put(username, identity);
+		var validate = await wallet.get(username)
+		if (JSON.stringify(validate) != JSON.stringify(identity)) {
+			return res.status(500).end("incorrect username/identity");
+		}
 
 		await gateway.connect(ccp, {
 			wallet,
@@ -341,7 +336,7 @@ app.post('/my-report', async (req, res) => {
 		console.log(`*** Result: committed ${result}`);
 
 		gateway.disconnect();
-		res.setHeader('Content-Type', 'application/json');
+		
 		res.status(200).send(result);
 
 	} catch (e) {
@@ -352,14 +347,17 @@ app.post('/my-report', async (req, res) => {
 })
 
 app.post('/buy', async (req, res) => {
+	res.setHeader('Content-Type', 'application/json');
 	try {
 		var username = req.body.username;
 		var identity = req.body.identity;
 
 		var id = req.body.id;
 
-		var wallet = await buildWallet(Wallets, null);
-		wallet.put(username, identity);
+		var validate = await wallet.get(username)
+		if (JSON.stringify(validate) != JSON.stringify(identity)) {
+			return res.status(500).end("incorrect username/identity");
+		}
 
 		await gateway.connect(ccp, {
 			wallet,
@@ -378,7 +376,7 @@ app.post('/buy', async (req, res) => {
 		console.log(`*** Result: committed ${result}`);
 
 		gateway.disconnect();
-		res.setHeader('Content-Type', 'application/json');
+		
 		res.status(200).send(result);
 
 	} catch (e) {
@@ -389,14 +387,17 @@ app.post('/buy', async (req, res) => {
 })
 
 app.post('/issue-token', async (req, res) => {
+	res.setHeader('Content-Type', 'application/json');
 	try {
 		var username = req.body.username;
 		var identity = req.body.identity;
 
 		var amount = req.body.amount;
 
-		var wallet = await buildWallet(Wallets, null);
-		wallet.put(username, identity);
+		var validate = await wallet.get(username)
+		if (JSON.stringify(validate) != JSON.stringify(identity)) {
+			return res.status(500).end("incorrect username/identity");
+		}
 
 		await gateway.connect(ccp, {
 			wallet,
@@ -415,7 +416,7 @@ app.post('/issue-token', async (req, res) => {
 		// console.log(`*** Result: committed ${result}`);
 
 		gateway.disconnect();
-		res.setHeader('Content-Type', 'application/json');
+		
 		res.status(200).send(result);
 
 	} catch (e) {
@@ -426,6 +427,7 @@ app.post('/issue-token', async (req, res) => {
 })
 
 app.post('/send-token', async (req, res) => {
+	res.setHeader('Content-Type', 'application/json');
 	try {
 		var username = req.body.username;
 		var identity = req.body.identity;
@@ -433,8 +435,10 @@ app.post('/send-token', async (req, res) => {
 		var amount = req.body.amount;
 		var recipient = req.body.recipient;
 
-		var wallet = await buildWallet(Wallets, null);
-		wallet.put(username, identity);
+		var validate = await wallet.get(username)
+		if (JSON.stringify(validate) != JSON.stringify(identity)) {
+			return res.status(500).end("incorrect username/identity");
+		}
 
 		await gateway.connect(ccp, {
 			wallet,
@@ -453,7 +457,7 @@ app.post('/send-token', async (req, res) => {
 		console.log(`*** Result: committed ${result}`);
 
 		gateway.disconnect();
-		res.setHeader('Content-Type', 'application/json');
+		
 		res.status(200).send(result);
 
 	} catch (e) {
