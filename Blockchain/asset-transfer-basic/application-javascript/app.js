@@ -86,6 +86,8 @@ var express = require('express');
 const bodyParser = require("body-parser");
 var jsonParser = bodyParser.json();
 var app = express();
+var cors = require('cors');
+app.use(cors());
 
 // parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: false }))
@@ -93,7 +95,7 @@ app.use(bodyParser.urlencoded({ extended: false }))
 // parse application/json
 app.use(bodyParser.json())
 
-const port = 3000
+const port = 8081
 
 // const x509Identity = {
 // 	credentials: {
@@ -113,14 +115,19 @@ app.get('/tes', async (req, res) => {
 })
 
 app.post('/register', async (req, res) => {
+	res.setHeader('Content-Type', 'application/json');
 	try {
 		var username = req.body.username
 		var first_name = req.body.first_name
 		var last_name = req.body.last_name
 
+		console.log('username '+ username);
+		console.log('username ' + first_name);
+		console.log('username ' + last_name);
+
 		// in a real application this would be done on an administrative flow, and only once
 
-		var identity = await registerAndEnrollUser(caClient, wallet, mspOrg1, username, 'org1.department1');
+		var user_identity = await registerAndEnrollUser(caClient, wallet, mspOrg1, username, 'org1.department1');
 
 		await gateway.connect(ccp, {
 			wallet,
@@ -140,12 +147,12 @@ app.post('/register', async (req, res) => {
 
 		gateway.disconnect();
 		res.setHeader('Content-Type', 'application/json');
-		res.send(identity);		
+		res.send(user_identity);		
 	
 	} catch (e) {
-		console.log('error')
+		console.log('error register: ' + e);
 		//this will eventually be handled by your error handling middleware
-		res.status(500).send(e);
+		res.send({ error: 'register failed. username has been registered before' });
 	}
 })
 
@@ -156,10 +163,13 @@ app.post('/login', async (req, res) => {
 		var username = req.body.username
 		var identity = req.body.identity
 
+		console.log(username)
 		
 		var validate = await wallet.get(username)
-		if (JSON.stringify(validate) != JSON.stringify(identity)) {
-			return res.status(500).end("incorrect username/identity");
+		if (JSON.stringify(validate) != JSON.stringify(JSON.parse(identity))) {
+			console.log(JSON.stringify(validate));
+			console.log(JSON.stringify(JSON.parse(identity)));
+			return res.send({ error: "incorrect username/identity"});
 		}
 
 		await gateway.connect(ccp, {
@@ -185,7 +195,7 @@ app.post('/login', async (req, res) => {
 	} catch (e) {
 		console.log('error' + e);
 		//this will eventually be handled by your error handling middleware
-		res.status(500).send(e);
+		res.send({error: e});
 	}
 })
 
@@ -197,7 +207,7 @@ app.post('/get-profile', async (req, res) => {
 
 		var validate = await wallet.get(username)
 		if (JSON.stringify(validate) != JSON.stringify(identity)) {
-			return res.status(500).end("incorrect username/identity");
+			return res.status(400).end("incorrect username/identity");
 		}
 
 		await gateway.connect(ccp, {
@@ -223,7 +233,7 @@ app.post('/get-profile', async (req, res) => {
 	} catch (e) {
 		console.log('error' + e);
 		//this will eventually be handled by your error handling middleware
-		res.status(500).send(e);
+		res.status(400).send(e);
 	}
 })
 
@@ -240,7 +250,7 @@ app.post('/create-asset', async (req, res) => {
 
 		var validate = await wallet.get(username)
 		if (JSON.stringify(validate) != JSON.stringify(identity)) {
-			return res.status(500).end("incorrect username/identity");
+			return res.status(400).end("incorrect username/identity");
 		}
 
 		await gateway.connect(ccp, {
@@ -266,7 +276,7 @@ app.post('/create-asset', async (req, res) => {
 	} catch (e) {
 		console.log('error' + e);
 		//this will eventually be handled by your error handling middleware
-		res.status(500).send(e);
+		res.status(400).send(e);
 	}
 })
 
@@ -278,7 +288,7 @@ app.post('/my-asset', async (req, res) => {
 
 		var validate = await wallet.get(username)
 		if (JSON.stringify(validate) != JSON.stringify(identity)) {
-			return res.status(500).end("incorrect username/identity");
+			return res.status(400).end("incorrect username/identity");
 		}
 
 		await gateway.connect(ccp, {
@@ -304,7 +314,7 @@ app.post('/my-asset', async (req, res) => {
 	} catch (e) {
 		console.log('error' + e);
 		//this will eventually be handled by your error handling middleware
-		res.status(500).send(e);
+		res.status(400).send(e);
 	}
 })
 
@@ -316,7 +326,7 @@ app.post('/issued-asset', async (req, res) => {
 
 		var validate = await wallet.get(username)
 		if (JSON.stringify(validate) != JSON.stringify(identity)) {
-			return res.status(500).end("incorrect username/identity");
+			return res.status(400).end("incorrect username/identity");
 		}
 
 		await gateway.connect(ccp, {
@@ -342,7 +352,51 @@ app.post('/issued-asset', async (req, res) => {
 	} catch (e) {
 		console.log('error' + e);
 		//this will eventually be handled by your error handling middleware
-		res.status(500).send(e);
+		res.status(400).send(e);
+	}
+})
+
+app.post('/admin-get-report', async (req, res) => {
+	res.setHeader('Content-Type', 'application/json');
+	try {
+		var username = req.body.username;
+		var identity = req.body.identity;
+
+		var receiver = req.body.receiver;
+
+		if (username !== 'admin') {
+			return res.status(400).end("non admin can not do the action");
+		}
+
+		var validate = await wallet.get(username)
+		if (JSON.stringify(validate) != JSON.stringify(identity)) {
+			return res.status(400).end("incorrect username/identity");
+		}
+
+		await gateway.connect(ccp, {
+			wallet,
+			identity: username,
+			discovery: { enabled: true, asLocalhost: true } // using asLocalhost as this gateway is using a fabric network deployed locally
+		});
+
+		// Build a network instance based on the channel where the smart contract is deployed
+		const network = await gateway.getNetwork(channelName);
+
+		// Get the contract from the network.
+		const contract = network.getContract(chaincodeName);
+
+		console.log('\n--> Submit Transaction: get report admin');
+		let result = await contract.submitTransaction('GetReportAdmin', username, receiver);
+		console.log(`*** Result: committed ${result}`);
+
+		gateway.disconnect();
+
+		res.status(200).send(result);
+
+	} catch (e) {
+		console.log('error' + e);
+		//this will eventually be handled by your error handling middleware
+		res.status(400).send(e);
 	}
 })
 
@@ -354,7 +408,7 @@ app.post('/my-report', async (req, res) => {
 
 		var validate = await wallet.get(username)
 		if (JSON.stringify(validate) != JSON.stringify(identity)) {
-			return res.status(500).end("incorrect username/identity");
+			return res.status(400).end("incorrect username/identity");
 		}
 
 		await gateway.connect(ccp, {
@@ -380,7 +434,7 @@ app.post('/my-report', async (req, res) => {
 	} catch (e) {
 		console.log('error' + e);
 		//this will eventually be handled by your error handling middleware
-		res.status(500).send(e);
+		res.status(400).send(e);
 	}
 })
 
@@ -394,7 +448,7 @@ app.post('/buy', async (req, res) => {
 
 		var validate = await wallet.get(username)
 		if (JSON.stringify(validate) != JSON.stringify(identity)) {
-			return res.status(500).end("incorrect username/identity");
+			return res.status(400).end("incorrect username/identity");
 		}
 
 		await gateway.connect(ccp, {
@@ -420,7 +474,7 @@ app.post('/buy', async (req, res) => {
 	} catch (e) {
 		console.log('error' + e);
 		//this will eventually be handled by your error handling middleware
-		res.status(500).send(e);
+		res.status(400).send(e);
 	}
 })
 
@@ -433,12 +487,12 @@ app.post('/issue-token', async (req, res) => {
 		var amount = req.body.amount;
 
 		if (username !== 'admin') {
-			return res.status(500).end("non admin can not do the action");
+			return res.status(400).end("non admin can not do the action");
 		}
 
 		var validate = await wallet.get(username)
 		if (JSON.stringify(validate) != JSON.stringify(identity)) {
-			return res.status(500).end("incorrect username/identity");
+			return res.status(400).end("incorrect username/identity");
 		}
 
 		await gateway.connect(ccp, {
@@ -464,7 +518,7 @@ app.post('/issue-token', async (req, res) => {
 	} catch (e) {
 		console.log('error' + e);
 		//this will eventually be handled by your error handling middleware
-		res.status(500).send(e);
+		res.status(400).send(e);
 	}
 })
 
@@ -478,17 +532,17 @@ app.post('/send-token', async (req, res) => {
 		var recipient = req.body.recipient;
 
 		if (username !== 'admin') {
-			return res.status(500).end("non admin can not do the action");
+			return res.status(400).end("non admin can not do the action");
 		}
 
 		var validateUser = await wallet.get(recipient)
 		if (!JSON.stringify(validateUser)) {
-			return res.status(500).end("invalid recipient username");
+			return res.status(400).end("invalid recipient username");
 		}
 
 		var validate = await wallet.get(username)
 		if (JSON.stringify(validate) != JSON.stringify(identity)) {
-			return res.status(500).end("incorrect username/identity");
+			return res.status(400).end("incorrect username/identity");
 		}
 
 		await gateway.connect(ccp, {
@@ -514,8 +568,13 @@ app.post('/send-token', async (req, res) => {
 	} catch (e) {
 		console.log('error' + e);
 		//this will eventually be handled by your error handling middleware
-		res.status(500).send(e);
+		res.status(400).send(e);
 	}
+})
+
+app.get('/ensof', async (req, res) => {
+	res.setHeader('Content-Type', 'application/json');
+	res.send("ENSOF BARHAMI")
 })
 
 app.listen(port, () => console.log('listening to port ' + port))
