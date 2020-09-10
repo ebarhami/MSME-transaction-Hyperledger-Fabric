@@ -7,7 +7,7 @@
       <input type="text" v-model="loginData.username" placeholder="Enter username">
       <br>
       <label>upload identity : 
-      <input type="file" id="file" ref="file" v-on:change="handleFileUpload()">
+      <input type="file" id="file" ref="file" v-on:change="handleFileUpload">
       </label>
       <br>
       <br>
@@ -42,45 +42,65 @@
 
 <script>
 import PostsService from "@/services/apiService";
+import StorageService from "@/services/localStorageService";
 import VueInstantLoadingSpinner from "vue-instant-loading-spinner/src/components/VueInstantLoadingSpinner.vue";
 
 export default {
   name: "response",
   data() {
     return {
-      loginData: {},
-      registerData: {},
+      loginData: {
+        username: "",
+        identity: ""
+      },
+      registerData: {
+        username: "",
+        firstName: "",
+        lastName: ""
+      },
       registerReponse: {
         data: ""
       },
       loginReponse: {
         data: ""
       },
-      file: ""
+      file: "",
     };
   },
   components: {
     VueInstantLoadingSpinner
   },
   methods: {
-    handleFileUpload(){
+    async handleFileUpload(){
       this.file = this.$refs.file.files[0];
 
+      var ready = false;
+      var result = '';
+
+      var check = function() {
+          if (ready === true) {
+            console.log('ENSOF');
+            console.log(result);
+            this.loginData.identity = result;
+            console.log('ENSOF');
+            console.log(this.loginData.identity);
+            return;
+          }
+          setTimeout(check, 500);
+      }.bind(this)
+
+      check();
+
       var fil = this.file,
-          read = new FileReader();      
+          reader = new FileReader(); 
+      
+      reader.readAsBinaryString(fil);
 
-      read.readAsBinaryString(fil);
-
-      console.log("ENSOF1");
-      console.log(read.result);
-
-      read.onload = function(){
-        console.log("ENSOF2");
-        var cek = read.result
-        console.log(cek)
-        this.loginData.identity = cek;
-        console.log("ENSOF SUCCESS");
-      }
+      reader.onloadend = function(evt) {
+          result = reader.result;
+          console.log(result);
+          ready = true;
+      };
     },
 
     async register() {
@@ -91,31 +111,25 @@ export default {
         this.registerData.firstName,
         this.registerData.lastName
       );
-      
-      var str = JSON.stringify(apiResponse.data);
 
-      var a = document.createElement("a");
-      var file = new Blob([str], {type: 'application/json'});
-      a.href = URL.createObjectURL(file);
-      a.download = 'ensof.id';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-
-      // const a = window.document.createElement('a');
-      // a.href = window.URL.createObjectURL(blob, { type: 'text/plain' });
-      // a.download = filename;
-      // document.body.appendChild(a);
-      // a.click(); // IE: "Access is denied"; see: https://connect.microsoft.com/IE/feedback/details/797361/ie-10-treats-blob-url-as-cross-origin-and-denies-access
-      // document.body.removeChild(a);
-
-      if (apiResponse.status == 200) {
+      if (!apiResponse.data.error) {
         console.log(apiResponse);
         this.registerReponse = apiResponse;
+
+        var str = JSON.stringify(apiResponse.data);
+
+        var a = document.createElement("a");
+        var file = new Blob([str], {type: 'application/json'});
+        a.href = URL.createObjectURL(file);
+        a.download = 'ensof.id';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
         await this.hideSpinner();
       } else {
-        console.log(apiResponse);
-        this.registerReponse = {error: 'error'};
+        this.registerReponse = apiResponse;
+        console.log(this.registerReponse);
         await this.hideSpinner();
       }
       
@@ -127,6 +141,9 @@ export default {
 
       if (!this.loginData.username || !this.loginData.identity) {
         console.log("!thislogin");
+        console.log(this.loginData.identity);
+        console.log(this.loginData.username);
+        console.log(this.file);
         let response = 'Please enter a username and identity';
         this.loginReponse.data = response;
         await this.hideSpinner();
@@ -141,13 +158,15 @@ export default {
         if (apiResponse.data.error) {
           // console.log(apiResponse);
           console.log(apiResponse.data.error);
-          this.loginReponse = apiResponse.data.error;
+          this.loginReponse = apiResponse;
         } else {
+          StorageService.setUsername(this.loginData.username);
+          StorageService.setIdentity(this.loginData.identity);
           this.$router.push("castBallot");
         }
 
         console.log(apiResponse);
-        this.loginReponse = apiResponse;
+        
         // this.$router.push('castBallot')
         await this.hideSpinner();
       }

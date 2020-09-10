@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "axios": "^0.19.2",
+    "buefy": "^0.9.3",
     "chart.js": "^2.8.0",
     "echarts": "^4.2.1",
     "vue": "^2.6.10",

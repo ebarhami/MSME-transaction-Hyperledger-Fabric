@@ -30,7 +30,7 @@ export default {
   login(username, identity) {
     return Api().post('login', {
       username: username,
-      identity: identity
+      identity: identity 
     }) 
   },
   queryByKey(key) {
