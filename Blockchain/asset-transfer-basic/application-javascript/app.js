@@ -134,9 +134,9 @@ app.post('/register', async (req, res) => {
 		// Get the contract from the network.
 		const contract = network.getContract(chaincodeName);
 
-		// console.log('\n--> Submit Transaction: Register');
-		// let result = await contract.submitTransaction("Register", username, first_name, last_name);
-		// console.log(`*** Result: committed ${result}`);
+		console.log('\n--> Submit Transaction: Register');
+		let result = await contract.submitTransaction("Register", username, first_name, last_name);
+		console.log(`*** Result: committed ${result}`);
 
 		gateway.disconnect();
 		res.setHeader('Content-Type', 'application/json');
@@ -189,6 +189,44 @@ app.post('/login', async (req, res) => {
 	}
 })
 
+app.post('/get-profile', async (req, res) => {
+	res.setHeader('Content-Type', 'application/json');
+	try {
+		var username = req.body.username
+		var identity = req.body.identity
+
+		var validate = await wallet.get(username)
+		if (JSON.stringify(validate) != JSON.stringify(identity)) {
+			return res.status(500).end("incorrect username/identity");
+		}
+
+		await gateway.connect(ccp, {
+			wallet,
+			identity: username,
+			discovery: { enabled: true, asLocalhost: true } // using asLocalhost as this gateway is using a fabric network deployed locally
+		});
+
+		// Build a network instance based on the channel where the smart contract is deployed
+		const network = await gateway.getNetwork(channelName);
+
+		// Get the contract from the network.
+		const contract = network.getContract(chaincodeName);
+
+		console.log('\n--> Submit Transaction: Register');
+		let result = await contract.submitTransaction('GetUser', username);
+		console.log(`*** Result: committed ${result}`);
+
+		gateway.disconnect();
+
+		res.status(200).send(result);
+
+	} catch (e) {
+		console.log('error' + e);
+		//this will eventually be handled by your error handling middleware
+		res.status(500).send(e);
+	}
+})
+
 app.post('/create-asset', async (req, res) => {
 	res.setHeader('Content-Type', 'application/json');
 	try {
@@ -218,7 +256,7 @@ app.post('/create-asset', async (req, res) => {
 		const contract = network.getContract(chaincodeName);
 
 		console.log('\n--> Submit Transaction: Register');
-		let result = await contract.submitTransaction('CreateAsset', id, category, name, username, price);
+		let result = await contract.submitTransaction('CreateAsset', id, category, name, price, username);
 		console.log(`*** Result: committed ${result}`);
 
 		gateway.disconnect();
@@ -394,6 +432,10 @@ app.post('/issue-token', async (req, res) => {
 
 		var amount = req.body.amount;
 
+		if (username !== 'admin') {
+			return res.status(500).end("non admin can not do the action");
+		}
+
 		var validate = await wallet.get(username)
 		if (JSON.stringify(validate) != JSON.stringify(identity)) {
 			return res.status(500).end("incorrect username/identity");
@@ -411,9 +453,9 @@ app.post('/issue-token', async (req, res) => {
 		// Get the contract from the network.
 		const contract = network.getContract(chaincodeName);
 
-		// console.log('\n--> Submit Transaction: issued asset');
-		// let result = await contract.submitTransaction('IssueToken', amount);
-		// console.log(`*** Result: committed ${result}`);
+		console.log('\n--> Submit Transaction: issued asset');
+		let result = await contract.submitTransaction('IssueToken', username, amount);
+		console.log(`*** Result: committed ${result}`);
 
 		gateway.disconnect();
 		
@@ -435,6 +477,15 @@ app.post('/send-token', async (req, res) => {
 		var amount = req.body.amount;
 		var recipient = req.body.recipient;
 
+		if (username !== 'admin') {
+			return res.status(500).end("non admin can not do the action");
+		}
+
+		var validateUser = await wallet.get(recipient)
+		if (!JSON.stringify(validateUser)) {
+			return res.status(500).end("invalid recipient username");
+		}
+
 		var validate = await wallet.get(username)
 		if (JSON.stringify(validate) != JSON.stringify(identity)) {
 			return res.status(500).end("incorrect username/identity");
@@ -453,7 +504,7 @@ app.post('/send-token', async (req, res) => {
 		const contract = network.getContract(chaincodeName);
 
 		console.log('\n--> Submit Transaction: issued asset');
-		let result = await contract.submitTransaction('BuyAsset', id, username);
+		let result = await contract.submitTransaction('SendToken', username, recipient, amount);
 		console.log(`*** Result: committed ${result}`);
 
 		gateway.disconnect();
