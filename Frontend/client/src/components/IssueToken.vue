@@ -5,14 +5,19 @@
       color="#385F73"
       dark
     >
-      <v-card-title class="headline">Profile</v-card-title>
+    <v-card-title class="headline">Issue Token</v-card-title>
 
     </v-card>
     <br>
     <br>
 
-    <b-table :data="data" :columns="columns"></b-table>
-  </div>
+    <b-field label="Issue Token">
+        <b-numberinput placeholder="insert token amount" v-model="price" :min="0"></b-numberinput>
+    </b-field>
+    <b-button type="is-primary" @click="createAsset">Issue Token</b-button>
+    <br>
+    <br>
+  </div>  
 </template>
 
 <script>

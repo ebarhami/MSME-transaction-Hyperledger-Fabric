@@ -1,43 +1,136 @@
 <template>
-  <div class="posts">
-    <h1>Current State: All Key-Value Pairs in World State</h1>
-    <button v-on:click="queryAll()">Query All Assets</button>
+  <v-card
+    max-width="600"
+    class="my-asset"
+  >
 
-    <div v-bind:key="carEntry.Key" v-for="carEntry in response">
-      <p>{{ carEntry.Key }} | {{ carEntry.Record }}</p>
-    </div>
-    <vue-instant-loading-spinner id = 'loader' ref="Spinner"></vue-instant-loading-spinner>
-  </div>
+    <v-container>
+      <v-row dense>
+        <v-col cols="12">
+          <v-card
+            color="#385F73"
+            dark
+          >
+            <v-card-title class="headline">My Asset</v-card-title>
+
+          </v-card>
+        </v-col>
+
+        <v-col
+          v-for="(item, i) in items"
+          :key="i"
+          cols="12"
+        >
+          <v-card
+            :color="item.color"
+            dark
+          >
+            <div class="d-flex flex-no-wrap justify-space-between">
+              
+                <v-card-title
+                  class="headline"
+                  v-text="item.name"
+                ></v-card-title>
+                <label>ID :</label>
+                <b>{{item.id}}</b>
+                <br> 
+                <label>Category :</label>
+                <b>{{item.category}}</b>
+                <br> 
+                <label>Price : Rp.</label>
+                <b>{{item.price}}</b>
+                <br>
+                <br>
+                <br> 
+            </div>
+          </v-card>
+        </v-col>
+        <br>
+        <span v-if="postResponse">
+          <b>{{ postResponse.data }}</b>
+        </span>
+      </v-row>
+    </v-container>
+  </v-card>
 </template>
 
 <script>
-import PostsService from "@/services/apiService";
-import VueInstantLoadingSpinner from "vue-instant-loading-spinner/src/components/VueInstantLoadingSpinner.vue";
+  
+  import StorageService from "@/services/localStorageService";
 
-export default {
-  name: "response",
-  data() {
-    return {
-      response: {}
-    };
-  },
-  components: {
-    VueInstantLoadingSpinner
-  },
-  methods: {
-    async queryAll() {
-      this.response = null;
-      this.runSpinner();
-      const apiResponse = await PostsService.queryAll();
-      this.response = apiResponse.data;
-      this.hideSpinner();
+  export default {
+    name: "response",
+    data() {
+      return {
+        card: 0,  
+        category: "",
+        name: "",
+        price: 0,
+        apiResponse: "",
+        username: "",
+        identity: "",
+        postResponse: "",
+        getResponse: "",
+        items: [
+        {
+          id: '12931r3n1F7087',
+          category: 'panganan',
+          name: 'Indomie',
+          price: '5000',
+        },
+        {
+          id: '12931r3n1F7087',
+          category: 'panganan',
+          name: 'Indomie',
+          price: '5000',
+        },
+        {
+          id: '12931r3n1F7087',
+          category: 'panganan',
+          name: 'Indomie',
+          price: '5000',
+        },
+        {
+          id: '12931r3n1F7087',
+          category: 'panganan',
+          name: 'Indomie',
+          price: '5000',
+        },
+        ],
+      };
     },
-    async runSpinner() {
-      this.$refs.Spinner.show();
+
+    beforeMount(){
+      this.getMyAsset();
     },
-    async hideSpinner() {
-      this.$refs.Spinner.hide();
+
+    methods : {
+      async getMyAsset(){
+        this.username = StorageService.getUsername();
+        this.identity = StorageService.getIdentity();
+
+        if (!this.username || !this.identity) {
+          console.log("!thislogin");
+        
+          let response = 'Please login first to access this page';
+          this.postResponse.data = response;
+        } else {
+          const apiResponse = await PostsService.myAsset(
+            this.username,
+            this.identity
+          );
+          console.log("apiResponse");
+          console.log(apiResponse.data);
+
+          if (apiResponse.data.error) {
+            // console.log(apiResponse);
+            console.log(apiResponse.data.error);
+            this.getResponse = apiResponse;
+          } else {
+            this.getResponse = apiResponse;
+          }
+        }
+      },
     }
   }
-};
 </script>

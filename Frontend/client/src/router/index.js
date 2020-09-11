@@ -7,6 +7,7 @@ import QueryAll from '@/components/QueryAll'
 import QueryWithQueryString from '@/components/QueryWithQueryString'
 import QueryByKey from '@/components/QueryByKey'
 import GetCurrentStanding from '@/components/GetCurrentStanding'
+import IssueToken from '@/components/IssueToken'
 
 Vue.use(Router)
 
@@ -21,6 +22,11 @@ export default new Router({
       path: '/castBallot',
       name: 'CastBallot',
       component: CastBallot
+    },
+    {
+      path: '/issueToken',
+      name: 'IssueToken',
+      component: IssueToken
     },
     {
       path: '/queryAll',

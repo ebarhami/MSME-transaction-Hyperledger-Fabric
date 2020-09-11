@@ -1,6 +1,16 @@
 <template>
     <section>
       <div class="create-asset">
+        <v-card
+            color="#385F73"
+            dark
+          >
+            <v-card-title class="headline">Create Asset</v-card-title>
+
+          </v-card>
+          <br>
+          <br>
+
         <b-field label="Category">
             <b-input placeholder="insert category" v-model="category" rounded></b-input>
         </b-field>
@@ -11,7 +21,11 @@
             <b-numberinput placeholder="insert price" v-model="price" :min="0"></b-numberinput>
         </b-field>
         <b-button type="is-primary" @click="createAsset">Create Asset</b-button>
-        
+        <br>
+        <br>
+        <span v-if="postResponse">
+          <b>{{ postResponse.data }}</b>
+        </span>
       </div>
     </section>
 </template>
@@ -27,7 +41,9 @@ export default {
     return {
       category: "",
       name: "",
-      price: 0
+      price: 0,
+      apiResponse: "",
+      postResponse: ""
     };
   },
   components: {

@@ -4,10 +4,12 @@
       
         <p><router-link to="/">Home</router-link>&nbsp;          
         <!-- <router-link to="/castBallot">Cast Ballot</router-link>&nbsp; -->
-        <router-link to="/QueryAll">QueryAll</router-link></p>
-        <router-link to="/queryWithQueryString">Query by Type</router-link>&nbsp;
-        <router-link to="/queryByKey">Query by Key</router-link>&nbsp;
-        <router-link to="/getCurrentStanding">Get Poll Standings</router-link>&nbsp;
+        <router-link to="/QueryAll">My Asset</router-link></p>
+        <router-link to="/queryWithQueryString">Profile</router-link>&nbsp;
+        <router-link to="/queryByKey">Report</router-link>&nbsp;
+        <router-link to="/getCurrentStanding">Available Asset</router-link>&nbsp;
+        <router-link to="/castBallot">Create Asset</router-link>&nbsp;
+        <router-link to="/issueToken">Issue Token</router-link>&nbsp;
       
       <router-view></router-view>
     </div>
@@ -49,7 +51,33 @@ export default {
 }
 
 .create-asset {
-  width: 300px;
+  width: 600px;
+	height: 100px;
+	
+	position: absolute;
+	top:0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+  	
+	margin: auto;
+}
+
+.my-asset {
+  width: 600px;
+	height: 100px;
+	
+	position: absolute;
+	top:0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+  	
+	margin: auto;
+}
+
+.table {
+  width: 600px;
 	height: 100px;
 	
 	position: absolute;

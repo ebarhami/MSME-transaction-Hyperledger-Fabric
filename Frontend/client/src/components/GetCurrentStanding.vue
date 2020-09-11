@@ -1,35 +1,8 @@
 <template>
   <v-card
-    max-width="400"
-    class="mx-auto"
+    max-width="600"
+    class="my-asset"
   >
-    <v-system-bar
-      color="pink darken-2"
-      dark
-    >
-      <v-spacer></v-spacer>
-
-      <v-icon>mdi-window-minimize</v-icon>
-
-      <v-icon>mdi-window-maximize</v-icon>
-
-      <v-icon>mdi-close</v-icon>
-    </v-system-bar>
-
-    <v-app-bar
-      dark
-      color="pink"
-    >
-      <v-app-bar-nav-icon></v-app-bar-nav-icon>
-
-      <v-toolbar-title>My Music</v-toolbar-title>
-
-      <v-spacer></v-spacer>
-
-      <v-btn icon>
-        <v-icon>mdi-magnify</v-icon>
-      </v-btn>
-    </v-app-bar>
 
     <v-container>
       <v-row dense>
@@ -38,13 +11,8 @@
             color="#385F73"
             dark
           >
-            <v-card-title class="headline">Unlimited music now</v-card-title>
+            <v-card-title class="headline">Available Asset to buy</v-card-title>
 
-            <v-card-subtitle>Listen to your favorite artists and albums whenever and wherever, online and offline.</v-card-subtitle>
-
-            <v-card-actions>
-              <v-btn text>Listen Now</v-btn>
-            </v-card-actions>
           </v-card>
         </v-col>
 
@@ -58,47 +26,137 @@
             dark
           >
             <div class="d-flex flex-no-wrap justify-space-between">
-              <div>
+              
                 <v-card-title
                   class="headline"
-                  v-text="item.title"
+                  v-text="item.name"
                 ></v-card-title>
-
-                <v-card-subtitle v-text="item.artist"></v-card-subtitle>
-              </div>
-
-              <v-avatar
-                class="ma-3"
-                size="125"
-                tile
-              >
-                <v-img :src="item.src"></v-img>
-              </v-avatar>
+                <label>ID :</label>
+                <b>{{item.id}}</b>
+                <br> 
+                <label>Category :</label>
+                <b>{{item.category}}</b>
+                <br> 
+                <label>Price : Rp.</label>
+                <b>{{item.price}}</b>
+                <br> 
+                <v-card-actions>
+                  <b-button type="is-primary is-light" @click="buyAsset(item.id)">Buy Asset</b-button>
+                </v-card-actions>
             </div>
           </v-card>
         </v-col>
+        <br>
+        <span v-if="postResponse">
+          <b>{{ postResponse.data }}</b>
+        </span>
       </v-row>
     </v-container>
   </v-card>
 </template>
 
 <script>
+  
+  import StorageService from "@/services/localStorageService";
+
   export default {
-    data: () => ({
-      items: [
+    name: "response",
+    data() {
+      return {
+        card: 0,  
+        category: "",
+        name: "",
+        price: 0,
+        apiResponse: "",
+        username: "",
+        identity: "",
+        postResponse: "",
+        getResponse: "",
+        items: [
         {
-          color: '#1F7087',
-          src: 'https://cdn.vuetifyjs.com/images/cards/foster.jpg',
-          title: 'Supermodel',
-          artist: 'Foster the People',
+          id: '12931r3n1F7087',
+          category: 'panganan',
+          name: 'Indomie',
+          price: '5000',
         },
         {
-          color: '#952175',
-          src: 'https://cdn.vuetifyjs.com/images/cards/halcyon.png',
-          title: 'Halcyon Days',
-          artist: 'Ellie Goulding',
+          id: '12931r3n1F7087',
+          category: 'panganan',
+          name: 'Indomie',
+          price: '5000',
         },
-      ],
-    }),
+        {
+          id: '12931r3n1F7087',
+          category: 'panganan',
+          name: 'Indomie',
+          price: '5000',
+        },
+        {
+          id: '12931r3n1F7087',
+          category: 'panganan',
+          name: 'Indomie',
+          price: '5000',
+        },
+        ],
+      };
+    },
+
+    beforeMount(){
+      this.getAvailableAsset();
+    },
+
+    methods : {
+      async getAvailableAsset(){
+        this.username = StorageService.getUsername();
+        this.identity = StorageService.getIdentity();
+
+        if (!this.username || !this.identity) {
+          console.log("!thislogin");
+        
+          let response = 'Please login first to access this page';
+          this.postResponse.data = response;
+        } else {
+          const apiResponse = await PostsService.issuedAsset(
+            this.username,
+            this.identity
+          );
+          console.log("apiResponse");
+          console.log(apiResponse.data);
+
+          if (apiResponse.data.error) {
+            // console.log(apiResponse);
+            console.log(apiResponse.data.error);
+            this.getResponse = apiResponse;
+          } else {
+            this.getResponse = apiResponse;
+          }
+        }
+      },
+      async buyAsset(id) {
+        this.username = StorageService.getUsername();
+        this.identity = StorageService.getIdentity();
+
+        if (!this.username || !this.identity) {
+          console.log("!thislogin");
+        
+          let response = 'Please login first to access this page';
+          this.postResponse.data = response;
+        } else {
+          const apiResponse = await PostsService.buyAsset(
+            this.username,
+            this.identity,
+            id
+          );
+
+          if (apiResponse.data.error) {
+            // console.log(apiResponse);
+            console.log(apiResponse.data.error);
+            this.postResponse = "Failed to to buy asset : " + apiResponse.data.error;
+          } else {
+            this.postResponse = "success buy asset" + apiResponse.data.error;
+          }
+        }
+      }
+    }
   }
 </script>

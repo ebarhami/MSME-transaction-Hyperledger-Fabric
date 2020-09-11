@@ -1,65 +1,140 @@
 <template>
-  <div class="posts">
-    <h1>Query By Key</h1>
-    <form v-on:submit="queryByKey">
-      <input type="text" v-model="input.key" placeholder="Enter Key to Query">
-      <br>
+  <v-card
+    max-width="600"
+    class="my-asset"
+  >
 
-      <input type="submit" value="Query">
-      <br>
-      <br>
-      <span v-if="input">
-        <b>{{ input.data }}</b>
-      </span>  
-      <br>
-    </form>
+    <v-container>
+      <v-row dense>
+        <v-col cols="12">
+          <v-card
+            color="#385F73"
+            dark
+          >
+            <v-card-title class="headline">My Report</v-card-title>
 
-    <br>
-      <vue-instant-loading-spinner id='loader' ref="Spinner"></vue-instant-loading-spinner>
-  </div>
+          </v-card>
+        </v-col>
+
+        <v-col
+          v-for="(item, i) in items"
+          :key="i"
+          cols="12"
+        >
+          <v-card
+            :color="item.color"
+            dark
+          >
+            <div class="d-flex flex-no-wrap justify-space-between">
+              
+                <v-card-title
+                  class="headline"
+                  v-text="item.name"
+                ></v-card-title>
+                <label>ID :</label>
+                <b>{{item.id}}</b>
+                <br> 
+                <label>Category :</label>
+                <b>{{item.category}}</b>
+                <br> 
+                <label>Price : Rp.</label>
+                <b>{{item.price}}</b>
+                <br>
+                <br>
+                <br> 
+            </div>
+          </v-card>
+        </v-col>
+        <br>
+        <span v-if="postResponse">
+          <b>{{ postResponse.data }}</b>
+        </span>
+      </v-row>
+    </v-container>
+  </v-card>
 </template>
 
 <script>
-import PostsService from "@/services/apiService";
-import VueInstantLoadingSpinner from 'vue-instant-loading-spinner/src/components/VueInstantLoadingSpinner.vue'
+  
+  import StorageService from "@/services/localStorageService";
 
-export default {
-  name: "response",
-  data() {
-    return {
-     input: {
-        data: ""
-      }
-    };
-  },
-  name: 'app',
-  components: {
-    VueInstantLoadingSpinner
-  },
-  methods: {
-    async queryByKey() {
-        this.runSpinner();
-      console.log('this.input: ');
-      console.log(this.input);
-      if (!this.input.key) {
-        console.log('this.input$#: ');
-        let response = 'Please enter a Key to query for.';
-        this.input.data = response;
-        this.hideSpinner();
-      } else {
-        this.runSpinner();
-        const apiResponse = await PostsService.queryByKey(this.input.key);
-        console.log(apiResponse);
-        this.input = apiResponse;
-        this.hideSpinner();
-      }
+  export default {
+    name: "response",
+    data() {
+      return {
+        card: 0,  
+        category: "",
+        name: "",
+        price: 0,
+        apiResponse: "",
+        username: "",
+        identity: "",
+        postResponse: {
+          data: ""
+        },
+        getResponse: {
+          data: ""
+        },
+        items: [
+        {
+          id: '12931r3n1F7087',
+          category: 'panganan',
+          name: 'Indomie',
+          price: '5000',
+        },
+        {
+          id: '12931r3n1F7087',
+          category: 'panganan',
+          name: 'Indomie',
+          price: '5000',
+        },
+        {
+          id: '12931r3n1F7087',
+          category: 'panganan',
+          name: 'Indomie',
+          price: '5000',
+        },
+        {
+          id: '12931r3n1F7087',
+          category: 'panganan',
+          name: 'Indomie',
+          price: '5000',
+        },
+        ],
+      };
     },
-    async runSpinner() {
-      this.$refs.Spinner.show();
+
+    beforeMount(){
+      this.getMyReport();
     },
-    async hideSpinner() {
-      this.$refs.Spinner.hide();
+
+    methods : {
+      async getMyReport(){
+        this.username = StorageService.getUsername();
+        this.identity = StorageService.getIdentity();
+
+        if (!this.username || !this.identity) {
+          console.log("!thislogin");
+        
+          let response = 'Please login first to access this page';
+          this.postResponse.data = response;
+        } else {
+          const apiResponse = await PostsService.myReport(
+            this.username,
+            this.identity
+          );
+          console.log("apiResponse");
+          console.log(apiResponse.data);
+
+          if (apiResponse.data.error) {
+            // console.log(apiResponse);
+            console.log(apiResponse.data.error);
+            this.getResponse = apiResponse;
+          } else {
+            this.getResponse = apiResponse;
+          }
+        }
+      },
     }
   }
-};
 </script>

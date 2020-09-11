@@ -17,7 +17,7 @@ export const setIdentity = () => {
     return window.localStorage.getItem(IDENTITY);
 };
 
-export const saveIdentity = identity => {
+export const getIdentity = identity => {
     window.localStorage.setItem(IDENTITY, identity);
 };
 
@@ -25,4 +25,4 @@ export const destroyIdentity = () => {
     window.localStorage.removeItem(IDENTITY);
 };
 
-export default { getUsername, setUsername, destroyUsername, setIdentity, saveIdentity, destroyIdentity };
+export default { getUsername, setUsername, destroyUsername, setIdentity, getIdentity, destroyIdentity };
