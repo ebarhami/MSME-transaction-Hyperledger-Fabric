@@ -206,7 +206,7 @@ class AssetTransfer extends Contract {
                 console.log(err);
                 record = strValue;
             }
-            if (record.Status !== 'issued') {
+            if (record.Status !== 'issued' || record.Owner == username) {
                 result = await iterator.next();
                 continue;
             }
