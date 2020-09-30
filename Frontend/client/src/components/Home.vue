@@ -1,10 +1,16 @@
 <template>
   <div class="posts">
-    <h1>MSME DAPP</h1>
+    <v-card
+            color="#385F73"
+            dark
+          >
+            <v-card-title class="headline">MSME DAPP</v-card-title>
+
+          </v-card>
     <h3>If you have been registered, enter your username and identity below</h3>
     <!--span><b>{{ response }}</b></span><br /-->
     <form v-on:submit="login">
-      <input type="text" v-model="loginData.username" placeholder="Enter username">
+      <b-input placeholder="Enter username" v-model="loginData.username" rounded></b-input>
       <br>
       <label>upload identity : 
       <input type="file" id="file" ref="file" v-on:change="handleFileUpload">
@@ -23,17 +29,17 @@
     <br>
     <h3>Otherwise, fill out the form below to register!</h3>
     <form v-on:submit="register">
-      <input type="text" v-model="registerData.username" placeholder="Enter Username">
+      <b-input type="text" v-model="registerData.username" placeholder="Enter Username"></b-input>
       <br>
-      <input type="text" v-model="registerData.firstName" placeholder="Enter First Name">
+      <b-input type="text" v-model="registerData.firstName" placeholder="Enter First Name"></b-input>
       <br>
-      <input type="text" v-model="registerData.lastName" placeholder="Enter Second Name">
+      <b-input type="text" v-model="registerData.lastName" placeholder="Enter Second Name"></b-input>
       <br>
       <input type="submit" value="Register">
     </form>
     <br>
     <span v-if="registerReponse">
-      <b>{{ registerReponse.data }}</b>
+      <b>success</b>
     </span>
     <br>
     <vue-instant-loading-spinner id='loader' ref="Spinner"></vue-instant-loading-spinner>
@@ -104,7 +110,6 @@ export default {
     },
 
     async register() {
-      console.log("ENSOF BARHAMI");
       await this.runSpinner();
       const apiResponse = await PostsService.register(
         this.registerData.username,
@@ -121,7 +126,7 @@ export default {
         var a = document.createElement("a");
         var file = new Blob([str], {type: 'application/json'});
         a.href = URL.createObjectURL(file);
-        a.download = 'ensof.id';
+        a.download = this.registerData.username + '.id';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -148,6 +153,9 @@ export default {
         this.loginReponse.data = response;
         await this.hideSpinner();
       } else {
+        console.log("REGISTRASION");
+        console.log(this.loginData.identity);
+        console.log(this.loginData.username);
         const apiResponse = await PostsService.login(
           this.loginData.username,
           this.loginData.identity

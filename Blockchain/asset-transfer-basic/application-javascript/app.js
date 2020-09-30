@@ -178,11 +178,18 @@ app.post('/login', async (req, res) => {
 			discovery: { enabled: true, asLocalhost: true } // using asLocalhost as this gateway is using a fabric network deployed locally
 		});
 
-		// // Build a network instance based on the channel where the smart contract is deployed
-		// const network = await gateway.getNetwork(channelName);
+		// Build a network instance based on the channel where the smart contract is deployed
+		const network = await gateway.getNetwork(channelName);
 
-		// // Get the contract from the network.
-		// const contract = network.getContract(chaincodeName);
+		// Get the contract from the network.
+		const contract = network.getContract(chaincodeName);
+
+		let isAdminExist = await contract.evaluateTransaction('AssetExists', 'admin');
+		if (isAdminExist == 'false') {
+			let registerAdmin = await contract.submitTransaction("Register", 'admin', 'admin', 'admin');
+			console.log(`*** Result: committed ${registerAdmin}`);
+		}
+		console.log("LOLOLOLO" + isAdminExist);
 
 		// console.log('\n--> Submit Transaction: Register');
 		// let result = await contract.submitTransaction('GetMyAssets', username);
@@ -206,9 +213,12 @@ app.post('/get-profile', async (req, res) => {
 		var identity = req.body.identity
 
 		var validate = await wallet.get(username)
-		if (JSON.stringify(validate) != JSON.stringify(identity)) {
-			return res.status(400).end("incorrect username/identity");
+		if (JSON.stringify(validate) != JSON.stringify(JSON.parse(identity))) {
+			console.log(JSON.stringify(validate));
+			console.log(JSON.stringify(JSON.parse(identity)));
+			return res.send({ error: "incorrect username/identity" });
 		}
+		
 
 		await gateway.connect(ccp, {
 			wallet,
@@ -222,9 +232,9 @@ app.post('/get-profile', async (req, res) => {
 		// Get the contract from the network.
 		const contract = network.getContract(chaincodeName);
 
-		console.log('\n--> Submit Transaction: Register');
-		let result = await contract.submitTransaction('GetUser', username);
-		console.log(`*** Result: committed ${result}`);
+		console.log('\n--> Submit Transaction: GetProfile');
+		let result = await contract.evaluateTransaction('GetUser', username);
+		console.log(`*** Result: ${prettyJSONString(result.toString())}`);
 
 		gateway.disconnect();
 
@@ -233,7 +243,7 @@ app.post('/get-profile', async (req, res) => {
 	} catch (e) {
 		console.log('error' + e);
 		//this will eventually be handled by your error handling middleware
-		res.status(400).send(e);
+		res.send({ error: e});
 	}
 })
 
@@ -249,9 +259,12 @@ app.post('/create-asset', async (req, res) => {
 		var price = req.body.price
 
 		var validate = await wallet.get(username)
-		if (JSON.stringify(validate) != JSON.stringify(identity)) {
-			return res.status(400).end("incorrect username/identity");
+		if (JSON.stringify(validate) != JSON.stringify(JSON.parse(identity))) {
+			console.log(JSON.stringify(validate));
+			console.log(JSON.stringify(JSON.parse(identity)));
+			return res.send({ error: "incorrect username/identity" });
 		}
+
 
 		await gateway.connect(ccp, {
 			wallet,
@@ -265,7 +278,7 @@ app.post('/create-asset', async (req, res) => {
 		// Get the contract from the network.
 		const contract = network.getContract(chaincodeName);
 
-		console.log('\n--> Submit Transaction: Register');
+		console.log('\n--> Submit Transaction: Create asset');
 		let result = await contract.submitTransaction('CreateAsset', id, category, name, price, username);
 		console.log(`*** Result: committed ${result}`);
 
@@ -276,7 +289,7 @@ app.post('/create-asset', async (req, res) => {
 	} catch (e) {
 		console.log('error' + e);
 		//this will eventually be handled by your error handling middleware
-		res.status(400).send(e);
+		res.send({ error: e});
 	}
 })
 
@@ -286,9 +299,15 @@ app.post('/my-asset', async (req, res) => {
 		var username = req.body.username
 		var identity = req.body.identity
 
+		console.log("GET ASSET")
+		console.log(username);
+		console.log(identity);
+
 		var validate = await wallet.get(username)
-		if (JSON.stringify(validate) != JSON.stringify(identity)) {
-			return res.status(400).end("incorrect username/identity");
+		if (JSON.stringify(validate) != JSON.stringify(JSON.parse(identity))) {
+			console.log(JSON.stringify(validate));
+			console.log(JSON.stringify(JSON.parse(identity)));
+			return res.send({ error: "incorrect username/identity" });
 		}
 
 		await gateway.connect(ccp, {
@@ -304,8 +323,8 @@ app.post('/my-asset', async (req, res) => {
 		const contract = network.getContract(chaincodeName);
 
 		console.log('\n--> Submit Transaction: Register');
-		let result = await contract.submitTransaction('GetMyAssets', username);
-		console.log(`*** Result: committed ${result}`);
+		let result = await contract.evaluateTransaction('GetMyAssets', username);
+		console.log(`*** Result: ${prettyJSONString(result.toString())}`);
 
 		gateway.disconnect();
 		
@@ -314,7 +333,7 @@ app.post('/my-asset', async (req, res) => {
 	} catch (e) {
 		console.log('error' + e);
 		//this will eventually be handled by your error handling middleware
-		res.status(400).send(e);
+		res.send({ error: e });
 	}
 })
 
@@ -325,8 +344,10 @@ app.post('/issued-asset', async (req, res) => {
 		var identity = req.body.identity
 
 		var validate = await wallet.get(username)
-		if (JSON.stringify(validate) != JSON.stringify(identity)) {
-			return res.status(400).end("incorrect username/identity");
+		if (JSON.stringify(validate) != JSON.stringify(JSON.parse(identity))) {
+			console.log(JSON.stringify(validate));
+			console.log(JSON.stringify(JSON.parse(identity)));
+			return res.send({ error: "incorrect username/identity" });
 		}
 
 		await gateway.connect(ccp, {
@@ -342,8 +363,8 @@ app.post('/issued-asset', async (req, res) => {
 		const contract = network.getContract(chaincodeName);
 
 		console.log('\n--> Submit Transaction: issued asset');
-		let result = await contract.submitTransaction('GetIssuedAssets');
-		console.log(`*** Result: committed ${result}`);
+		let result = await contract.evaluateTransaction('GetIssuedAssets', username);
+		console.log(`*** Result: ${prettyJSONString(result.toString())}`);
 
 		gateway.disconnect();
 		
@@ -352,7 +373,7 @@ app.post('/issued-asset', async (req, res) => {
 	} catch (e) {
 		console.log('error' + e);
 		//this will eventually be handled by your error handling middleware
-		res.status(400).send(e);
+		res.send({ error: e });
 	}
 })
 
@@ -369,8 +390,10 @@ app.post('/admin-get-report', async (req, res) => {
 		}
 
 		var validate = await wallet.get(username)
-		if (JSON.stringify(validate) != JSON.stringify(identity)) {
-			return res.status(400).end("incorrect username/identity");
+		if (JSON.stringify(validate) != JSON.stringify(JSON.parse(identity))) {
+			console.log(JSON.stringify(validate));
+			console.log(JSON.stringify(JSON.parse(identity)));
+			return res.send({ error: "incorrect username/identity" });
 		}
 
 		await gateway.connect(ccp, {
@@ -386,8 +409,8 @@ app.post('/admin-get-report', async (req, res) => {
 		const contract = network.getContract(chaincodeName);
 
 		console.log('\n--> Submit Transaction: get report admin');
-		let result = await contract.submitTransaction('GetReportAdmin', username, receiver);
-		console.log(`*** Result: committed ${result}`);
+		let result = await contract.evaluateTransaction('GetReportAdmin', username, receiver);
+		console.log(`*** Result: ${prettyJSONString(result.toString())}`);
 
 		gateway.disconnect();
 
@@ -396,7 +419,7 @@ app.post('/admin-get-report', async (req, res) => {
 	} catch (e) {
 		console.log('error' + e);
 		//this will eventually be handled by your error handling middleware
-		res.status(400).send(e);
+		res.send({ error: e });
 	}
 })
 
@@ -407,8 +430,10 @@ app.post('/my-report', async (req, res) => {
 		var identity = req.body.identity
 
 		var validate = await wallet.get(username)
-		if (JSON.stringify(validate) != JSON.stringify(identity)) {
-			return res.status(400).end("incorrect username/identity");
+		if (JSON.stringify(validate) != JSON.stringify(JSON.parse(identity))) {
+			console.log(JSON.stringify(validate));
+			console.log(JSON.stringify(JSON.parse(identity)));
+			return res.send({ error: "incorrect username/identity" });
 		}
 
 		await gateway.connect(ccp, {
@@ -423,9 +448,9 @@ app.post('/my-report', async (req, res) => {
 		// Get the contract from the network.
 		const contract = network.getContract(chaincodeName);
 
-		console.log('\n--> Submit Transaction: issued asset');
-		let result = await contract.submitTransaction('GetMyReport', username);
-		console.log(`*** Result: committed ${result}`);
+		console.log('\n--> Submit Transaction: report');
+		let result = await contract.evaluateTransaction('GetMyReport', username);
+		console.log(`*** Result: ${prettyJSONString(result.toString())}`);
 
 		gateway.disconnect();
 		
@@ -434,7 +459,7 @@ app.post('/my-report', async (req, res) => {
 	} catch (e) {
 		console.log('error' + e);
 		//this will eventually be handled by your error handling middleware
-		res.status(400).send(e);
+		res.send({ error: e });
 	}
 })
 
@@ -447,8 +472,10 @@ app.post('/buy', async (req, res) => {
 		var id = req.body.id;
 
 		var validate = await wallet.get(username)
-		if (JSON.stringify(validate) != JSON.stringify(identity)) {
-			return res.status(400).end("incorrect username/identity");
+		if (JSON.stringify(validate) != JSON.stringify(JSON.parse(identity))) {
+			console.log(JSON.stringify(validate));
+			console.log(JSON.stringify(JSON.parse(identity)));
+			return res.send({ error: "incorrect username/identity" });
 		}
 
 		await gateway.connect(ccp, {
@@ -474,7 +501,7 @@ app.post('/buy', async (req, res) => {
 	} catch (e) {
 		console.log('error' + e);
 		//this will eventually be handled by your error handling middleware
-		res.status(400).send(e);
+		res.send({ error: e });
 	}
 })
 
@@ -487,12 +514,14 @@ app.post('/issue-token', async (req, res) => {
 		var amount = req.body.amount;
 
 		if (username !== 'admin') {
-			return res.status(400).end("non admin can not do the action");
-		}
+			return res.send({error : "non admin can not do the action"});
+		}		
 
 		var validate = await wallet.get(username)
-		if (JSON.stringify(validate) != JSON.stringify(identity)) {
-			return res.status(400).end("incorrect username/identity");
+		if (JSON.stringify(validate) != JSON.stringify(JSON.parse(identity))) {
+			console.log(JSON.stringify(validate));
+			console.log(JSON.stringify(JSON.parse(identity)));
+			return res.send({ error: "incorrect username/identity" });
 		}
 
 		await gateway.connect(ccp, {
@@ -507,7 +536,7 @@ app.post('/issue-token', async (req, res) => {
 		// Get the contract from the network.
 		const contract = network.getContract(chaincodeName);
 
-		console.log('\n--> Submit Transaction: issued asset');
+		console.log('\n--> Submit Transaction: issue token');
 		let result = await contract.submitTransaction('IssueToken', username, amount);
 		console.log(`*** Result: committed ${result}`);
 
@@ -518,31 +547,41 @@ app.post('/issue-token', async (req, res) => {
 	} catch (e) {
 		console.log('error' + e);
 		//this will eventually be handled by your error handling middleware
-		res.status(400).send(e);
+		res.send({ error: e });
 	}
 })
 
 app.post('/send-token', async (req, res) => {
 	res.setHeader('Content-Type', 'application/json');
+	console.log("BARHAMI");
 	try {
+		console.log("BARHAMI");
 		var username = req.body.username;
 		var identity = req.body.identity;
 
 		var amount = req.body.amount;
 		var recipient = req.body.recipient;
 
-		if (username !== 'admin') {
-			return res.status(400).end("non admin can not do the action");
-		}
+		console.log("ENSOFFFFF");
+		console.log(username);
+		console.log(identity);
+		console.log(amount);
+		console.log(recipient);
 
-		var validateUser = await wallet.get(recipient)
-		if (!JSON.stringify(validateUser)) {
-			return res.status(400).end("invalid recipient username");
+		if (username !== 'admin') {
+			return res.send({error:"non admin can not do the action"});
 		}
 
 		var validate = await wallet.get(username)
-		if (JSON.stringify(validate) != JSON.stringify(identity)) {
-			return res.status(400).end("incorrect username/identity");
+		if (JSON.stringify(validate) != JSON.stringify(JSON.parse(identity))) {
+			console.log(JSON.stringify(validate));
+			console.log(JSON.stringify(JSON.parse(identity)));
+			return res.send({ error: "incorrect username/identity" });
+		}
+
+		var validateRecipient = await wallet.get(recipient);
+		if (!validateRecipient) {
+			return res.send({ error: "recipient doesnt exists" });
 		}
 
 		await gateway.connect(ccp, {
@@ -557,7 +596,7 @@ app.post('/send-token', async (req, res) => {
 		// Get the contract from the network.
 		const contract = network.getContract(chaincodeName);
 
-		console.log('\n--> Submit Transaction: issued asset');
+		console.log('\n--> Submit Transaction: send token');
 		let result = await contract.submitTransaction('SendToken', username, recipient, amount);
 		console.log(`*** Result: committed ${result}`);
 
@@ -568,7 +607,7 @@ app.post('/send-token', async (req, res) => {
 	} catch (e) {
 		console.log('error' + e);
 		//this will eventually be handled by your error handling middleware
-		res.status(400).send(e);
+		res.send({ error: e });
 	}
 })
 

@@ -13,11 +13,11 @@ export const destroyUsername = () => {
     window.localStorage.removeItem(USERNAME);
 };
 
-export const setIdentity = () => {
+export const getIdentity = () => {
     return window.localStorage.getItem(IDENTITY);
 };
 
-export const getIdentity = identity => {
+export const setIdentity = identity => {
     window.localStorage.setItem(IDENTITY, identity);
 };
 

@@ -72,18 +72,17 @@ export default {
       identity: identity
     })
   },
+  getProfile(username, identity) {
+    return Api().post('get-profile', {
+      username: username,
+      identity: identity
+    })
+  },
   buy(username, identity, id) {
     return Api().post('buy', {
       username: username,
       identity: identity,
       id: id
-    })
-  },
-  issueToken(username, identity, amount) {
-    return Api().post('issue-token', {
-      username: username,
-      identity: identity,
-      amount: amount
     })
   },
   sendToken(username, identity, amount, recipient) {
@@ -94,12 +93,12 @@ export default {
       recipient: recipient
     })
   },
-  queryByKey(key) {
-    return Api().post('queryByKey', {
-      key: key
-    }) 
+  issueToken(username, identity, amount) {
+    return Api().post('issue-token', {
+      username: username,
+      identity: identity,
+      amount: amount
+    })
   },
-  getCurrentStanding() {
-    return Api().get('getCurrentStanding')
-  }
+
 }

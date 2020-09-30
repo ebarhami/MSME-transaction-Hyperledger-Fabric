@@ -23,9 +23,11 @@
         <b-button type="is-primary" @click="createAsset">Create Asset</b-button>
         <br>
         <br>
-        <span v-if="postResponse">
-          <b>{{ postResponse.data }}</b>
+        <span v-if="getResponse">
+          <b>Success Create Asset</b>
         </span>
+        <br>
+        <vue-instant-loading-spinner id='loader' ref="Spinner"></vue-instant-loading-spinner>
       </div>
     </section>
 </template>
@@ -43,7 +45,7 @@ export default {
       name: "",
       price: 0,
       apiResponse: "",
-      postResponse: ""
+      getResponse: ""
     };
   },
   components: {
@@ -51,18 +53,35 @@ export default {
   },
   methods: {
     async createAsset() {
-      // await this.runSpinner();
+      await this.runSpinner();
+      this.username = StorageService.getUsername();
+      this.identity = StorageService.getIdentity();
 
-      StorageService.setUsername("RUDIII");
-
-      console.log("ENSOF BARHAMI");
-      console.log(this.category);
-      console.log(this.name);
-      console.log(this.price);
-      console.log(StorageService.getUsername())
-
+      if (!this.username || !this.identity) {
+        console.log("!thislogin");
       
-      // await this.hideSpinner();
+        let response = 'Please Login First';
+        this.postResponse.data = response;
+      } else {
+        const apiResponse = await PostsService.createAsset(
+          this.username,
+          this.identity,
+          this.category,
+          this.name,
+          this.price
+        );
+        console.log("apiResponse");
+        console.log(apiResponse.data);
+
+        if (apiResponse.data.error) {
+          // console.log(apiResponse);
+          console.log(apiResponse.data.error);
+          this.getResponse = apiResponse;
+        } else {
+          this.getResponse = apiResponse;
+        }
+      }      
+      await this.hideSpinner();
     },
     async runSpinner() {
       this.$refs.Spinner.show();

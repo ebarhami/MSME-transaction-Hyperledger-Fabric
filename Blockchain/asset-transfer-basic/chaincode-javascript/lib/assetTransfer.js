@@ -192,7 +192,7 @@ class AssetTransfer extends Contract {
         return JSON.stringify(allResults);
     }
 
-    async GetIssuedAssets(ctx) {
+    async GetIssuedAssets(ctx, username) {
         const allResults = [];
         // range query with empty string for startKey and endKey does an open-ended query of all assets in the chaincode namespace.
         const iterator = await ctx.stub.getStateByRange('', '');
@@ -235,7 +235,7 @@ class AssetTransfer extends Contract {
                 console.log(err);
                 record = strValue;
             }
-            if (record.Type !== 'sak-etap' || record.Owner !== receiver) {
+            if (record.Type !== 'sak-etap' || (record.Owner !== username && record.Buyer !== username)) {
                 result = await iterator.next();
                 continue;
             }
@@ -246,7 +246,7 @@ class AssetTransfer extends Contract {
     }
 
 
-    async GetMyReport(ctx, owner) {
+    async GetMyReport(ctx, username) {
         const allResults = [];
         // range query with empty string for startKey and endKey does an open-ended query of all assets in the chaincode namespace.
         const iterator = await ctx.stub.getStateByRange('', '');
@@ -260,7 +260,7 @@ class AssetTransfer extends Contract {
                 console.log(err);
                 record = strValue;
             }
-            if (record.Type !== 'sak-etap' || record.Owner !== owner) {
+            if (record.Type !== 'sak-etap' || (record.Owner !== username && record.Buyer !== username)) {
                 result = await iterator.next();
                 continue;
             }
@@ -319,7 +319,7 @@ class AssetTransfer extends Contract {
                     Type: user.Type,
                     Username: user.Username,
                     FirstName: user.FirstName,
-                    LastName: user.Token,
+                    LastName: user.LastName,
                     Token: parseInt(amount) + parseInt(user.Token),
                     LastUpdated: new Date(),
                 };

@@ -11,20 +11,28 @@
     <br>
     <br>
 
-    <b-table :data="data" :columns="columns"></b-table>
+    
+
+    <br>
+    <span v-if="getResponse">
+        <b-table :data="data" :columns="columns"></b-table>
+    </span>
   </div>
 </template>
 
 <script>
+
+    import PostsService from "@/services/apiService";
+    import StorageService from "@/services/localStorageService";    
+    
     export default {
         data() {
             return {
                 data: [
-                    { 'id': 1, 'first_name': 'Jesse', 'last_name': 'Simmons' },
-                    { 'id': 2, 'first_name': 'John', 'last_name': 'Jacobs', 'date': '2016-12-15 06:00:53', 'gender': 'Male' },
-                    { 'id': 3, 'first_name': 'Tina', 'last_name': 'Gilbert', 'date': '2016-04-26 06:26:28', 'gender': 'Female' },
-                    { 'id': 4, 'first_name': 'Clarence', 'last_name': 'Flores', 'date': '2016-04-10 10:28:46', 'gender': 'Male' },
-                    { 'id': 5, 'first_name': 'Anne', 'last_name': 'Lee', 'date': '2016-12-06 14:38:38', 'gender': 'Female' }
+                    { 'id': 1, 'attribute': 'username', 'value': 'ensof' },
+                    { 'id': 2, 'first_name': 'first_name', 'last_name': '123', 'date': '2016-12-15 06:00:53', 'gender': 'Male' },
+                    { 'id': 3, 'first_name': 'last_name', 'last_name': 'asf', 'date': '2016-04-26 06:26:28', 'gender': 'Female' },
+                    { 'id': 4, 'first_name': 'token', 'last_name': '10000', 'date': '2016-04-10 10:28:46', 'gender': 'Male' },
                 ],
                 columns: [
                     {
@@ -34,15 +42,61 @@
                         numeric: true
                     },
                     {
-                        field: 'first_name',
+                        field: 'attribute',
                         label: 'Attribute',
                     },
                     {
-                        field: 'last_name',
+                        field: 'value',
                         label: 'Value',
                     },
-                ]
+                ],
+                getResponse: {
+                    data: ""
+                },
             }
+        }, 
+
+        beforeMount(){
+          this.getMyProfile();
+        },
+
+        methods : {
+            async getMyProfile(){
+                this.username = StorageService.getUsername();
+                this.identity = StorageService.getIdentity();
+
+                if (!this.username || !this.identity) {
+                    console.log("!thislogin");
+                    
+                    let response = 'Please Login First';
+                    this.postResponse.data = response;
+                } else {
+                    const apiResponse = await PostsService.getProfile(
+                        this.username,
+                        this.identity
+                    );
+                    console.log("apiResponse");
+                    console.log(apiResponse.data);
+
+                    if (apiResponse.data.error) {
+                        // console.log(apiResponse);
+                        console.log(apiResponse.data.error);
+                        this.getResponse.data = apiResponse;
+                    } else {
+                        var response = [];
+                        let i = 1;
+                        for (let key in apiResponse.data) {
+                            response.push({
+                                id: i++,
+                                attribute: key,
+                                value: apiResponse.data[key]
+                            });
+                        }
+                        this.data = await response;
+                        this.getResponse.data = apiResponse.data;
+                    }
+                }
+            },
         }
     }
 </script>
